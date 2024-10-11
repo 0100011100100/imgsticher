@@ -3,122 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Stitcher</title>
+    <title>360 Video Stitcher</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #000;
         }
-        #canvas-container {
+        #viewer {
+            width: 100vw;
+            height: 100vh;
             position: relative;
-            border: 1px solid #000;
-            width: 800px;
-            height: 600px;
-            margin: 20px auto;
-            background-color: #f0f0f0;
         }
-        .draggable {
+        button {
             position: absolute;
-            cursor: move;
-        }
-        #controls {
-            margin: 20px;
+            top: 20px;
+            left: 20px;
+            padding: 10px;
+            background-color: white;
+            color: black;
+            border: none;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
-    <h1>Image Stitcher</h1>
-    
-    <div id="controls">
-        <input type="file" id="imageLoader" accept="image/*" multiple />
-        <button id="saveButton">Save Image</button>
-    </div>
-    
-    <div id="canvas-container">
-        <canvas id="stitchCanvas" width="800" height="600"></canvas>
-    </div>
+    <div id="viewer"></div>
+
+    <!-- Add Panolens.js from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/panolens.js/0.12.0/panolens.min.js"></script>
 
     <script>
-        const canvas = document.getElementById('stitchCanvas');
-        const ctx = canvas.getContext('2d');
-        const imageLoader = document.getElementById('imageLoader');
-        const saveButton = document.getElementById('saveButton');
-        let images = [];
-        let selectedImage = null;
+        // Initialize the viewer and panorama video
+        const viewer = new PANOLENS.Viewer({
+            container: document.getElementById('viewer'),
+            autoHideInfospot: false
+        });
 
-        imageLoader.addEventListener('change', handleImageUpload);
-        saveButton.addEventListener('click', saveCanvasAsImage);
+        // Add your stitched 360-degree video
+        const videoPanorama = new PANOLENS.VideoPanorama('stitched_output.mp4');
+        viewer.add(videoPanorama);
 
-        function handleImageUpload(e) {
-            const files = e.target.files;
-            for (let i = 0; i < files.length; i++) {
-                const reader = new FileReader();
-                reader.onload = function (event) {
-                    const img = new Image();
-                    img.src = event.target.result;
-                    img.onload = function () {
-                        addImageToCanvas(img);
-                    }
-                }
-                reader.readAsDataURL(files[i]);
+        // Autoplay video
+        videoPanorama.video.play();
+
+        // Add event to pause/play video on click
+        viewer.container.addEventListener('click', () => {
+            if (videoPanorama.video.paused) {
+                videoPanorama.video.play();
+            } else {
+                videoPanorama.video.pause();
             }
-        }
-
-        function addImageToCanvas(img) {
-            const draggableImg = document.createElement('img');
-            draggableImg.src = img.src;
-            draggableImg.classList.add('draggable');
-            draggableImg.style.left = '0px';
-            draggableImg.style.top = '0px';
-            draggableImg.style.width = img.width / 2 + 'px'; // Resize to fit canvas
-            draggableImg.style.height = img.height / 2 + 'px';
-
-            // Enable dragging
-            draggableImg.onmousedown = dragMouseDown;
-            document.getElementById('canvas-container').appendChild(draggableImg);
-            images.push(draggableImg);
-        }
-
-        function dragMouseDown(e) {
-            e.preventDefault();
-            selectedImage = e.target;
-            document.onmousemove = elementDrag;
-            document.onmouseup = closeDragElement;
-        }
-
-        function elementDrag(e) {
-            e.preventDefault();
-            if (selectedImage) {
-                selectedImage.style.left = (e.pageX - canvas.offsetLeft - selectedImage.width / 2) + "px";
-                selectedImage.style.top = (e.pageY - canvas.offsetTop - selectedImage.height / 2) + "px";
-            }
-        }
-
-        function closeDragElement() {
-            document.onmousemove = null;
-            document.onmouseup = null;
-            selectedImage = null;
-        }
-
-        function saveCanvasAsImage() {
-            // Clear the canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw each image to the canvas at its current position
-            images.forEach(image => {
-                const x = parseInt(image.style.left, 10);
-                const y = parseInt(image.style.top, 10);
-                const width = image.width;
-                const height = image.height;
-                ctx.drawImage(image, x, y, width, height);
-            });
-
-            // Save the canvas content as an image
-            const link = document.createElement('a');
-            link.download = 'stitched_image.png';
-            link.href = canvas.toDataURL();
-            link.click();
-        }
+        });
     </script>
 </body>
 </html>
