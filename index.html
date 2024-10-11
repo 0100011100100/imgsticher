@@ -1,4 +1,124 @@
-<div style="display: flex;">
-  <img src="https://static.vecteezy.com/system/resources/thumbnails/022/925/855/small/generative-ai-illustration-of-black-wall-texture-rough-background-dark-concrete-floor-abstract-dark-blue-background-smoke-smog-empty-dark-scene-neon-light-spotlights-concrete-floor-photo.jpg" alt="Image 1" style="width:50%;">
-  <img src="https://static.vecteezy.com/system/resources/thumbnails/022/925/855/small/generative-ai-illustration-of-black-wall-texture-rough-background-dark-concrete-floor-abstract-dark-blue-background-smoke-smog-empty-dark-scene-neon-light-spotlights-concrete-floor-photo.jpg" alt="Image 2" style="width:50%;">
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Stitcher</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        #canvas-container {
+            position: relative;
+            border: 1px solid #000;
+            width: 800px;
+            height: 600px;
+            margin: 20px auto;
+            background-color: #f0f0f0;
+        }
+        .draggable {
+            position: absolute;
+            cursor: move;
+        }
+        #controls {
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Image Stitcher</h1>
+    
+    <div id="controls">
+        <input type="file" id="imageLoader" accept="image/*" multiple />
+        <button id="saveButton">Save Image</button>
+    </div>
+    
+    <div id="canvas-container">
+        <canvas id="stitchCanvas" width="800" height="600"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('stitchCanvas');
+        const ctx = canvas.getContext('2d');
+        const imageLoader = document.getElementById('imageLoader');
+        const saveButton = document.getElementById('saveButton');
+        let images = [];
+        let selectedImage = null;
+
+        imageLoader.addEventListener('change', handleImageUpload);
+        saveButton.addEventListener('click', saveCanvasAsImage);
+
+        function handleImageUpload(e) {
+            const files = e.target.files;
+            for (let i = 0; i < files.length; i++) {
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = function () {
+                        addImageToCanvas(img);
+                    }
+                }
+                reader.readAsDataURL(files[i]);
+            }
+        }
+
+        function addImageToCanvas(img) {
+            const draggableImg = document.createElement('img');
+            draggableImg.src = img.src;
+            draggableImg.classList.add('draggable');
+            draggableImg.style.left = '0px';
+            draggableImg.style.top = '0px';
+            draggableImg.style.width = img.width / 2 + 'px'; // Resize to fit canvas
+            draggableImg.style.height = img.height / 2 + 'px';
+
+            // Enable dragging
+            draggableImg.onmousedown = dragMouseDown;
+            document.getElementById('canvas-container').appendChild(draggableImg);
+            images.push(draggableImg);
+        }
+
+        function dragMouseDown(e) {
+            e.preventDefault();
+            selectedImage = e.target;
+            document.onmousemove = elementDrag;
+            document.onmouseup = closeDragElement;
+        }
+
+        function elementDrag(e) {
+            e.preventDefault();
+            if (selectedImage) {
+                selectedImage.style.left = (e.pageX - canvas.offsetLeft - selectedImage.width / 2) + "px";
+                selectedImage.style.top = (e.pageY - canvas.offsetTop - selectedImage.height / 2) + "px";
+            }
+        }
+
+        function closeDragElement() {
+            document.onmousemove = null;
+            document.onmouseup = null;
+            selectedImage = null;
+        }
+
+        function saveCanvasAsImage() {
+            // Clear the canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw each image to the canvas at its current position
+            images.forEach(image => {
+                const x = parseInt(image.style.left, 10);
+                const y = parseInt(image.style.top, 10);
+                const width = image.width;
+                const height = image.height;
+                ctx.drawImage(image, x, y, width, height);
+            });
+
+            // Save the canvas content as an image
+            const link = document.createElement('a');
+            link.download = 'stitched_image.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+    </script>
+</body>
+</html>
